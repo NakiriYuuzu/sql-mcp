@@ -1,4 +1,4 @@
-import { Pool, type PoolConfig } from 'pg'
+import postgres, { type Sql } from 'postgres'
 import { BaseAdapter } from './base'
 import type {
     ConnectionConfig,
@@ -11,11 +11,12 @@ import type {
 import { ConnectionError, QueryError } from '../utils/errors'
 
 /**
- * PostgreSQL database adapter implementation
+ * PostgreSQL database adapter implementation using postgres.js
+ * https://github.com/porsager/postgres
  */
 export class PostgresAdapter extends BaseAdapter {
     readonly engine: DatabaseEngine = 'postgres'
-    private pool: Pool | null = null
+    private sql: Sql | null = null
 
     getDefaultPort(): number {
         return 5432
@@ -27,39 +28,22 @@ export class PostgresAdapter extends BaseAdapter {
 
     async connect(config: ConnectionConfig): Promise<void> {
         try {
-            const poolConfig: PoolConfig = {
+            const sslConfig = this.buildSslConfig(config.ssl)
+
+            this.sql = postgres({
                 host: config.server,
                 port: config.port ?? this.getDefaultPort(),
-                user: config.user,
+                username: config.user,
                 password: config.password,
                 database: config.database ?? 'postgres',
-                connectionTimeoutMillis: 30000,
-                idleTimeoutMillis: 30000,
-                max: 10
-            }
-
-            // Handle SSL configuration
-            if (config.ssl) {
-                if (typeof config.ssl === 'boolean') {
-                    poolConfig.ssl = config.ssl
-                        ? { rejectUnauthorized: false }
-                        : false
-                } else {
-                    const sslConfig = config.ssl as SslConfig
-                    poolConfig.ssl = {
-                        rejectUnauthorized: sslConfig.rejectUnauthorized ?? true,
-                        cert: sslConfig.cert,
-                        key: sslConfig.key,
-                        ca: sslConfig.ca
-                    }
-                }
-            }
-
-            this.pool = new Pool(poolConfig)
+                connect_timeout: 30,
+                idle_timeout: 30,
+                max: 10,
+                ssl: sslConfig
+            })
 
             // Test connection
-            const client = await this.pool.connect()
-            client.release()
+            await this.sql`SELECT 1`
 
             this._isConnected = true
             this._currentDatabase = config.database ?? 'postgres'
@@ -72,10 +56,28 @@ export class PostgresAdapter extends BaseAdapter {
         }
     }
 
+    private buildSslConfig(ssl: ConnectionConfig['ssl']): postgres.Options<{}>['ssl'] {
+        if (!ssl) {
+            return false
+        }
+
+        if (typeof ssl === 'boolean') {
+            return ssl ? 'require' : false
+        }
+
+        const sslConfig = ssl as SslConfig
+        return {
+            rejectUnauthorized: sslConfig.rejectUnauthorized ?? true,
+            cert: sslConfig.cert,
+            key: sslConfig.key,
+            ca: sslConfig.ca
+        }
+    }
+
     async disconnect(): Promise<void> {
-        if (this.pool) {
-            await this.pool.end()
-            this.pool = null
+        if (this.sql) {
+            await this.sql.end()
+            this.sql = null
         }
         this._isConnected = false
         this._currentDatabase = null
@@ -98,14 +100,14 @@ export class PostgresAdapter extends BaseAdapter {
         this.validateConnected()
 
         try {
-            const result = await this.pool!.query(`
+            const result = await this.sql!`
                 SELECT datname as name
                 FROM pg_database
                 WHERE datistemplate = false
                   AND datallowconn = true
                 ORDER BY datname
-            `)
-            return result.rows.map(row => row.name)
+            `
+            return result.map(row => row.name as string)
         } catch (error) {
             throw new QueryError(
                 `Failed to list databases: ${error instanceof Error ? error.message : String(error)}`,
@@ -118,7 +120,7 @@ export class PostgresAdapter extends BaseAdapter {
         this.validateConnected()
 
         try {
-            const result = await this.pool!.query(`
+            const result = await this.sql!`
                 SELECT
                     table_schema as schema,
                     table_name as name,
@@ -129,10 +131,10 @@ export class PostgresAdapter extends BaseAdapter {
                 FROM information_schema.tables
                 WHERE table_schema NOT IN ('pg_catalog', 'information_schema')
                 ORDER BY table_schema, table_name
-            `)
-            return result.rows.map(row => ({
-                schema: row.schema,
-                name: row.name,
+            `
+            return result.map(row => ({
+                schema: row.schema as string,
+                name: row.name as string,
                 type: row.type as 'TABLE' | 'VIEW'
             }))
         } catch (error) {
@@ -149,7 +151,7 @@ export class PostgresAdapter extends BaseAdapter {
         const schemaName = schema ?? this.getDefaultSchema()
 
         try {
-            const result = await this.pool!.query(`
+            const result = await this.sql!`
                 SELECT
                     c.column_name as name,
                     c.data_type as type,
@@ -175,20 +177,20 @@ export class PostgresAdapter extends BaseAdapter {
                         c.ordinal_position
                     ) as comment
                 FROM information_schema.columns c
-                WHERE c.table_schema = $1 AND c.table_name = $2
+                WHERE c.table_schema = ${schemaName} AND c.table_name = ${tableName}
                 ORDER BY c.ordinal_position
-            `, [schemaName, tableName])
+            `
 
-            return result.rows.map(row => ({
-                name: row.name,
-                type: row.type,
+            return result.map(row => ({
+                name: row.name as string,
+                type: row.type as string,
                 nullable: Boolean(row.nullable),
-                maxLength: row.max_length ?? undefined,
-                precision: row.precision ?? undefined,
-                scale: row.scale ?? undefined,
+                maxLength: (row.max_length as number | null) ?? undefined,
+                precision: (row.precision as number | null) ?? undefined,
+                scale: (row.scale as number | null) ?? undefined,
                 isPrimaryKey: Boolean(row.is_primary_key),
-                defaultValue: row.default_value ?? undefined,
-                comment: row.comment ?? undefined
+                defaultValue: (row.default_value as string | null) ?? undefined,
+                comment: (row.comment as string | null) ?? undefined
             }))
         } catch (error) {
             throw new QueryError(
@@ -213,25 +215,17 @@ export class PostgresAdapter extends BaseAdapter {
                 modifiedQuery = `${query.trim().replace(/;?\s*$/, '')} LIMIT ${limit}`
             }
 
-            const result = await this.pool!.query(modifiedQuery)
+            // Use unsafe() for dynamic SQL queries
+            const result = await this.sql!.unsafe(modifiedQuery)
 
-            // Handle SELECT queries
-            if (result.rows && result.rows.length > 0) {
-                const columns = result.fields.map(field => field.name)
-                return {
-                    columns,
-                    rows: result.rows,
-                    rowCount: result.rows.length,
-                    affectedRows: result.rowCount ?? undefined
-                }
-            }
+            // Get column names from the result
+            const columns = result.columns?.map(col => col.name) ?? []
 
-            // Handle non-SELECT queries
             return {
-                columns: result.fields?.map(field => field.name) ?? [],
-                rows: result.rows ?? [],
-                rowCount: result.rows?.length ?? 0,
-                affectedRows: result.rowCount ?? undefined
+                columns,
+                rows: Array.from(result),
+                rowCount: result.length,
+                affectedRows: result.count
             }
         } catch (error) {
             throw new QueryError(
