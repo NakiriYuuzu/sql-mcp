@@ -1,6 +1,6 @@
 # @yuuzu/sql-mcp
 
-[![CI](https://github.com/yuuzu/sql-mcp/actions/workflows/ci.yml/badge.svg)](https://github.com/yuuzu/sql-mcp/actions/workflows/ci.yml)
+[![CI](https://github.com/NakiriYuuzu/sql-mcp/actions/workflows/ci.yml/badge.svg)](https://github.com/NakiriYuuzu/sql-mcp/actions/workflows/ci.yml)
 [![npm version](https://badge.fury.io/js/@yuuzu%2Fsql-mcp.svg)](https://www.npmjs.com/package/@yuuzu/sql-mcp)
 
 A Model Context Protocol (MCP) server for MSSQL and PostgreSQL database operations.
