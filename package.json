@@ -19,15 +19,17 @@
         "prepublishOnly": "bun run build"
     },
     "dependencies": {
-        "@modelcontextprotocol/sdk": "^1.25.2",
-        "mssql": "^12.2.0",
-        "postgres": "^3.4.8",
+        "@modelcontextprotocol/sdk": "^1.29.0",
+        "better-sqlite3": "^12.8.0",
+        "mssql": "^12.2.1",
+        "postgres": "^3.4.9",
         "zod": "^3.25.76"
     },
     "devDependencies": {
+        "@types/better-sqlite3": "^7.6.13",
         "@types/bun": "latest",
-        "@types/mssql": "^9.1.8",
-        "typescript": "^5.9.3"
+        "@types/mssql": "^9.1.11",
+        "typescript": "^6.0.2"
     },
     "engines": {
         "node": ">=18.0.0"
