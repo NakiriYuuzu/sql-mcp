@@ -90,6 +90,47 @@ describe('Schemas', () => {
             })
             expect(result.success).toBe(false)
         })
+
+        test('should accept SQLite config with filename', () => {
+            const result = ConnectDatabaseSchema.safeParse({
+                engine: 'sqlite',
+                filename: '/tmp/test.db'
+            })
+            expect(result.success).toBe(true)
+        })
+
+        test('should accept SQLite config with :memory:', () => {
+            const result = ConnectDatabaseSchema.safeParse({
+                engine: 'sqlite',
+                filename: ':memory:'
+            })
+            expect(result.success).toBe(true)
+        })
+
+        test('should accept SQLite config with readonly and fileMustExist', () => {
+            const result = ConnectDatabaseSchema.safeParse({
+                engine: 'sqlite',
+                filename: '/tmp/test.db',
+                readonly: true,
+                fileMustExist: true
+            })
+            expect(result.success).toBe(true)
+        })
+
+        test('should reject SQLite config without filename', () => {
+            const result = ConnectDatabaseSchema.safeParse({
+                engine: 'sqlite'
+            })
+            expect(result.success).toBe(false)
+        })
+
+        test('should reject SQLite config with empty filename', () => {
+            const result = ConnectDatabaseSchema.safeParse({
+                engine: 'sqlite',
+                filename: ''
+            })
+            expect(result.success).toBe(false)
+        })
     })
 
     describe('SwitchDatabaseSchema', () => {

@@ -20,17 +20,17 @@ export function registerTools(server: McpServer): void {
         'connect-database',
         {
             title: 'Connect Database',
-            description: 'Connect to a database server (MSSQL or PostgreSQL). Disconnects any existing connection first.',
+            description: 'Connect to a database server (MSSQL, PostgreSQL, or SQLite). Disconnects any existing connection first.',
             inputSchema: {
-                engine: z.enum(['mssql', 'postgres']).describe('Database engine type'),
-                server: z.string().describe('Server hostname or IP address'),
+                engine: z.enum(['mssql', 'postgres', 'sqlite']).describe('Database engine type'),
+                server: z.string().optional().describe('Server hostname or IP address (mssql, postgres)'),
                 port: z.number().optional().describe('Port number'),
-                database: z.string().optional().describe('Initial database to connect to'),
-                user: z.string().optional().describe('Username for authentication'),
-                password: z.string().optional().describe('Password for authentication'),
-                windowsAuth: z.boolean().optional().describe('Use Windows Authentication (MSSQL only)'),
-                encrypt: z.boolean().optional().describe('Enable encryption (default: true)'),
-                trustServerCertificate: z.boolean().optional().describe('Trust server certificate'),
+                database: z.string().optional().describe('Initial database to connect to (mssql, postgres)'),
+                user: z.string().optional().describe('Username for authentication (mssql, postgres)'),
+                password: z.string().optional().describe('Password for authentication (mssql, postgres)'),
+                windowsAuth: z.boolean().optional().describe('Use Windows Authentication (mssql only)'),
+                encrypt: z.boolean().optional().describe('Enable encryption (mssql only, default: true)'),
+                trustServerCertificate: z.boolean().optional().describe('Trust server certificate (mssql only)'),
                 ssl: z.union([
                     z.boolean(),
                     z.object({
@@ -39,7 +39,10 @@ export function registerTools(server: McpServer): void {
                         key: z.string().optional(),
                         ca: z.string().optional()
                     })
-                ]).optional().describe('SSL configuration (PostgreSQL only)')
+                ]).optional().describe('SSL configuration (postgres only)'),
+                filename: z.string().optional().describe('File path for SQLite, or ":memory:" for in-memory (sqlite only)'),
+                readonly: z.boolean().optional().describe('Open SQLite database in read-only mode (sqlite only)'),
+                fileMustExist: z.boolean().optional().describe('Throw if SQLite file does not exist (sqlite only)')
             }
         },
         async (args) => {
@@ -47,8 +50,11 @@ export function registerTools(server: McpServer): void {
                 const input = ConnectDatabaseSchema.parse(args)
                 await connectionManager.connect(input)
                 const state = connectionManager.getConnectionState()
+                const target = input.engine === 'sqlite'
+                    ? `file ${input.filename}`
+                    : `server at ${input.server}`
                 return formatSuccessResponse({
-                    message: `Connected to ${input.engine} server at ${input.server}`,
+                    message: `Connected to ${input.engine} ${target}`,
                     database: state.database
                 })
             } catch (error) {

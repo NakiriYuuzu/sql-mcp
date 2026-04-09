@@ -1,7 +1,7 @@
 /**
  * Database engine types supported by this MCP server
  */
-export type DatabaseEngine = 'mssql' | 'postgres'
+export type DatabaseEngine = 'mssql' | 'postgres' | 'sqlite'
 
 /**
  * Query mode determines what SQL operations are allowed
@@ -23,7 +23,11 @@ export interface SslConfig {
  */
 export interface ConnectionConfig {
     engine: DatabaseEngine
-    server: string
+    /**
+     * Server hostname. Required for mssql and postgres engines; unused for sqlite.
+     * Adapters validate presence in their own `connect()`.
+     */
+    server?: string
     port?: number
     database?: string
 
@@ -38,6 +42,14 @@ export interface ConnectionConfig {
 
     // PostgreSQL SSL options
     ssl?: boolean | SslConfig
+
+    // SQLite specific options
+    /** File path or `:memory:` for an in-memory database. */
+    filename?: string
+    /** Open the database in read-only mode. */
+    readonly?: boolean
+    /** Throw if the database file does not already exist (prevents accidental creation). */
+    fileMustExist?: boolean
 }
 
 /**

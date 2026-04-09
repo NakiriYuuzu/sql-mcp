@@ -26,6 +26,9 @@ export class MssqlAdapter extends BaseAdapter {
 
     async connect(config: ConnectionConfig): Promise<void> {
         try {
+            if (!config.server) {
+                throw new ConnectionError('server is required for the mssql engine')
+            }
             const sqlConfig: sql.config = {
                 server: config.server,
                 port: config.port ?? this.getDefaultPort(),

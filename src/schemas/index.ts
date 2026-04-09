@@ -23,36 +23,69 @@ export const SslConfigSchema = z.union([
 ])
 
 /**
- * Schema for connect-database tool input
+ * Schema for MSSQL connection input
  */
-export const ConnectDatabaseSchema = z.object({
-    engine: DatabaseEngineSchema
-        .describe('Database engine type: mssql or postgres'),
+export const MssqlConnectSchema = z.object({
+    engine: z.literal('mssql'),
     server: z.string().min(1)
         .describe('Server hostname or IP address'),
     port: z.number().int().positive().optional()
-        .describe('Port number (default: 1433 for MSSQL, 5432 for PostgreSQL)'),
+        .describe('Port number (default: 1433)'),
     database: z.string().optional()
         .describe('Initial database to connect to'),
+    user: z.string().optional()
+        .describe('Username for SQL Server authentication'),
+    password: z.string().optional()
+        .describe('Password for SQL Server authentication'),
+    windowsAuth: z.boolean().optional()
+        .describe('Use Windows Authentication'),
+    encrypt: z.boolean().optional()
+        .describe('Enable encryption (default: true)'),
+    trustServerCertificate: z.boolean().optional()
+        .describe('Trust server certificate without validation')
+})
 
-    // Standard authentication
+/**
+ * Schema for PostgreSQL connection input
+ */
+export const PostgresConnectSchema = z.object({
+    engine: z.literal('postgres'),
+    server: z.string().min(1)
+        .describe('Server hostname or IP address'),
+    port: z.number().int().positive().optional()
+        .describe('Port number (default: 5432)'),
+    database: z.string().optional()
+        .describe('Initial database to connect to'),
     user: z.string().optional()
         .describe('Username for authentication'),
     password: z.string().optional()
         .describe('Password for authentication'),
-
-    // MSSQL specific options
-    windowsAuth: z.boolean().optional()
-        .describe('Use Windows Authentication (MSSQL only)'),
-    encrypt: z.boolean().optional()
-        .describe('Enable encryption (default: true)'),
-    trustServerCertificate: z.boolean().optional()
-        .describe('Trust server certificate without validation'),
-
-    // PostgreSQL SSL options
     ssl: SslConfigSchema.optional()
-        .describe('SSL configuration (PostgreSQL only)')
+        .describe('SSL configuration')
 })
+
+/**
+ * Schema for SQLite connection input
+ */
+export const SqliteConnectSchema = z.object({
+    engine: z.literal('sqlite'),
+    filename: z.string().min(1)
+        .describe('File path for the SQLite database. Use ":memory:" for an in-memory database.'),
+    readonly: z.boolean().optional()
+        .describe('Open the database in read-only mode'),
+    fileMustExist: z.boolean().optional()
+        .describe('Throw if the database file does not already exist')
+})
+
+/**
+ * Schema for connect-database tool input.
+ * Discriminated union on `engine` enforces engine-specific required fields at parse time.
+ */
+export const ConnectDatabaseSchema = z.discriminatedUnion('engine', [
+    MssqlConnectSchema,
+    PostgresConnectSchema,
+    SqliteConnectSchema
+])
 
 /**
  * Schema for switch-database tool input
