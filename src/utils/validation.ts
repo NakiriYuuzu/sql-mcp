@@ -10,7 +10,8 @@ const SAFE_PATTERNS = [
     /^\s*EXPLAIN\s+/i,
     /^\s*SHOW\s+/i,
     /^\s*DESCRIBE\s+/i,
-    /^\s*DESC\s+/i
+    /^\s*DESC\s+/i,
+    /^\s*PRAGMA\s+/i
 ]
 
 /**

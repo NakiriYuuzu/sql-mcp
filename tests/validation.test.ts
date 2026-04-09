@@ -55,6 +55,17 @@ describe('SQL Validation', () => {
             expect(() => validateQuery('SELECT * FROM users; DELETE FROM users', mode))
                 .toThrow(ValidationError)
         })
+
+        test('should allow PRAGMA table_info (SQLite metadata read)', () => {
+            expect(() => validateQuery('PRAGMA table_info(users)', mode)).not.toThrow()
+            expect(() => validateQuery('  PRAGMA table_info(users)  ', mode)).not.toThrow()
+            expect(() => validateQuery('pragma foreign_key_list(users)', mode)).not.toThrow()
+        })
+
+        test('should allow PRAGMA setting read (e.g., journal_mode)', () => {
+            expect(() => validateQuery('PRAGMA journal_mode', mode)).not.toThrow()
+            expect(() => validateQuery('PRAGMA foreign_keys', mode)).not.toThrow()
+        })
     })
 
     describe('validateQuery - write mode', () => {
