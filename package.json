@@ -1,7 +1,7 @@
 {
     "name": "@yuuzu/sql-mcp",
     "version": "1.1.1",
-    "description": "MCP server for MSSQL and PostgreSQL database operations",
+    "description": "MCP server for MSSQL, PostgreSQL, and SQLite database operations",
     "type": "module",
     "main": "dist/index.js",
     "bin": {
@@ -43,6 +43,8 @@
         "database",
         "mssql",
         "postgresql",
+        "sqlite",
+        "better-sqlite3",
         "sql"
     ],
     "author": "yuuzu",

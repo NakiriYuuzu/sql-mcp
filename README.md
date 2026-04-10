@@ -3,7 +3,7 @@
 [![CI](https://github.com/NakiriYuuzu/sql-mcp/actions/workflows/ci.yml/badge.svg)](https://github.com/NakiriYuuzu/sql-mcp/actions/workflows/ci.yml)
 [![npm version](https://badge.fury.io/js/@yuuzu%2Fsql-mcp.svg)](https://www.npmjs.com/package/@yuuzu/sql-mcp)
 
-A Model Context Protocol (MCP) server for MSSQL and PostgreSQL database operations.
+A Model Context Protocol (MCP) server for MSSQL, PostgreSQL, and SQLite database operations.
 
 ## Installation
 
@@ -17,7 +17,7 @@ npx @yuuzu/sql-mcp
 
 ## Features
 
-- **Multi-database support**: MSSQL and PostgreSQL
+- **Multi-database support**: MSSQL, PostgreSQL, and SQLite (via better-sqlite3)
 - **8 tools** for database operations
 - **Three query modes**: safe, write, full
 - **Advanced authentication**: Windows Auth (MSSQL), SSL certificates (PostgreSQL)
@@ -44,6 +44,8 @@ Control query permissions via `SQL_MCP_MODE` environment variable:
 | `safe` (default) | SELECT, WITH, EXPLAIN | Read-only, safest |
 | `write` | + INSERT, UPDATE, DELETE | Allows data modification |
 | `full` | + CREATE, DROP, ALTER, TRUNCATE | Full access, use with caution |
+
+> **Note:** `PRAGMA` statements (e.g. `PRAGMA table_info(users)`) are allowed in all modes including `safe`, as they are read-only metadata queries commonly used with SQLite.
 
 ```bash
 # Example: Enable write mode
@@ -132,6 +134,48 @@ Add to your `claude_desktop_config.json`:
     }
 }
 ```
+
+### Connect to SQLite (file)
+
+```json
+{
+    "tool": "connect-database",
+    "arguments": {
+        "engine": "sqlite",
+        "filename": "/absolute/path/to/database.db"
+    }
+}
+```
+
+### Connect to SQLite (in-memory)
+
+Useful for testing, demos, or ephemeral scratch workspaces.
+
+```json
+{
+    "tool": "connect-database",
+    "arguments": {
+        "engine": "sqlite",
+        "filename": ":memory:"
+    }
+}
+```
+
+### Connect to SQLite (read-only)
+
+```json
+{
+    "tool": "connect-database",
+    "arguments": {
+        "engine": "sqlite",
+        "filename": "/absolute/path/to/database.db",
+        "readonly": true,
+        "fileMustExist": true
+    }
+}
+```
+
+> **SQLite runtime note:** SQLite support uses `better-sqlite3` which requires Node.js. When running via `bunx`, MSSQL and PostgreSQL work normally but SQLite connections will return a clear error directing you to use `npx` or `node` instead.
 
 ## Development
 
