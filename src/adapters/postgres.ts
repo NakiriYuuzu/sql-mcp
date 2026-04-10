@@ -28,6 +28,9 @@ export class PostgresAdapter extends BaseAdapter {
 
     async connect(config: ConnectionConfig): Promise<void> {
         try {
+            if (!config.server) {
+                throw new ConnectionError('server is required for the postgres engine')
+            }
             const sslConfig = this.buildSslConfig(config.ssl)
 
             this.sql = postgres({

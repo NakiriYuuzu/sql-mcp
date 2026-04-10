@@ -63,4 +63,29 @@ describe('ConnectionManager', () => {
             await expect(connectionManager.switchDatabase('test')).rejects.toThrow(NotConnectedError)
         })
     })
+
+    describe('sqlite integration', () => {
+        const isBun = typeof Bun !== 'undefined'
+
+        test.skipIf(isBun)('should connect to an in-memory SQLite database and round-trip a query', async () => {
+            await connectionManager.connect({ engine: 'sqlite', filename: ':memory:' })
+
+            const state = connectionManager.getConnectionState()
+            expect(state.isConnected).toBe(true)
+            expect(state.engine).toBe('sqlite')
+            expect(state.database).toBe(':memory:')
+
+            const dbs = await connectionManager.listDatabases()
+            expect(dbs).toEqual(['main'])
+
+            await connectionManager.executeQuery('CREATE TABLE t (id INTEGER PRIMARY KEY, v TEXT)')
+            await connectionManager.executeQuery("INSERT INTO t (v) VALUES ('hello')")
+            const result = await connectionManager.executeQuery('SELECT * FROM t')
+            expect(result.rowCount).toBe(1)
+            expect(result.rows[0]).toEqual({ id: 1, v: 'hello' })
+
+            await connectionManager.disconnect()
+            expect(connectionManager.isConnected).toBe(false)
+        })
+    })
 })

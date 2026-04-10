@@ -14,7 +14,7 @@ async function main() {
     // Create MCP server
     const server = new McpServer({
         name: 'sql-mcp',
-        version: '1.0.0'
+        version: '1.2.0'
     })
 
     // Register all tools
@@ -44,7 +44,7 @@ async function main() {
     })
 
     // Log startup info to stderr (stdout is used for MCP communication)
-    console.error(`[sql-mcp] Starting SQL MCP Server v1.0.0`)
+    console.error(`[sql-mcp] Starting SQL MCP Server v1.2.0`)
     console.error(`[sql-mcp] Query mode: ${config.queryMode} (${getModeDescription(config.queryMode)})`)
 
     // Connect transport and start server

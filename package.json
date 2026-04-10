@@ -1,7 +1,7 @@
 {
     "name": "@yuuzu/sql-mcp",
-    "version": "1.1.1",
-    "description": "MCP server for MSSQL and PostgreSQL database operations",
+    "version": "1.2.0",
+    "description": "MCP server for MSSQL, PostgreSQL, and SQLite database operations",
     "type": "module",
     "main": "dist/index.js",
     "bin": {
@@ -12,22 +12,24 @@
     ],
     "scripts": {
         "dev": "bun run src/index.ts",
-        "build": "bun build src/index.ts --outdir dist --target node --format esm",
+        "build": "bun build src/index.ts --outdir dist --target node --format esm --external better-sqlite3",
         "test": "bun test",
         "test:coverage": "bun test --coverage",
         "typecheck": "tsc --noEmit",
         "prepublishOnly": "bun run build"
     },
     "dependencies": {
-        "@modelcontextprotocol/sdk": "^1.25.2",
-        "mssql": "^12.2.0",
-        "postgres": "^3.4.8",
+        "@modelcontextprotocol/sdk": "^1.29.0",
+        "better-sqlite3": "^12.8.0",
+        "mssql": "^12.2.1",
+        "postgres": "^3.4.9",
         "zod": "^3.25.76"
     },
     "devDependencies": {
+        "@types/better-sqlite3": "^7.6.13",
         "@types/bun": "latest",
-        "@types/mssql": "^9.1.8",
-        "typescript": "^5.9.3"
+        "@types/mssql": "^9.1.11",
+        "typescript": "^6.0.2"
     },
     "engines": {
         "node": ">=18.0.0"
@@ -41,6 +43,8 @@
         "database",
         "mssql",
         "postgresql",
+        "sqlite",
+        "better-sqlite3",
         "sql"
     ],
     "author": "yuuzu",

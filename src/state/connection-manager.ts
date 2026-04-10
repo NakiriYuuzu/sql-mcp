@@ -71,7 +71,7 @@ class ConnectionManager {
         // Create new adapter and connect
         this.adapter = createAdapter(config.engine)
         await this.adapter.connect(config)
-        this.serverAddress = config.server
+        this.serverAddress = config.server ?? null
     }
 
     /**
